@@ -1,0 +1,20 @@
+#!/bin/bash
+
+outport=945
+time=800
+
+#init timeout
+
+while true
+do
+  sleep 4
+  ps aux | grep -v tor && watch -n ${time} sudo killall tor &
+  
+  #init tor
+  /usr/sbin/tor &
+  sleep 1.5
+  watch -n 1.2 --exec /usr/sbin/tor && sleep 1 && sudo killall tor
+  
+  echo Restart
+  sleep 4
+done
