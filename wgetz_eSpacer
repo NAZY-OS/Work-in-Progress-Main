@@ -1,0 +1,59 @@
+#!/bin/bash
+
+readonly SCRIPT_NAME="$0"
+
+# Function to display usage instructions
+display_usage() {
+    echo "Usage: $SCRIPT_NAME [-d <depth>] <GitHub_URL>"
+    echo "Options:"
+    echo "  -d <depth>      Specify the depth for mirroring (optional)"
+    echo "                  If not provided, the script will determine the smallest depth needed."
+    echo "  <GitHub_URL>    Specify the GitHub URL to mirror"
+}
+
+# Check if the number of arguments is less than 1
+if [ $# -lt 1 ]; then
+    display_usage
+    exit 1
+fi
+
+# Default depth value
+readonly DEFAULT_DEPTH=""
+
+# Parse options
+while getopts ":d:" opt; do
+    case $opt in
+        d)
+            readonly DEPTH="$OPTARG"
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            display_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Shift to get non-option arguments
+shift $((OPTIND - 1))
+
+# Check if URL is provided
+if [ -z "$1" ]; then
+    echo "Error: GitHub URL is missing." >&2
+    display_usage
+    exit 1
+fi
+
+# Construct wget command with options
+readonly WGET_COMMAND="wget \
+--mirror \
+--page-requisites \
+--html-extension \
+--convert-links \
+${DEPTH:+--recursive --level=$DEPTH} \
+$1"
+
+# Execute wget command
+echo "Executing command:"
+echo "$WGET_COMMAND"
+eval "$WGET_COMMAND"
