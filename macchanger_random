@@ -1,13 +1,34 @@
 #!/bin/bash
 
-for netdev in $(cat /proc/net/dev | grep : | awk -F ":" '{ print $1 }' | grep -v lo)  
-do
-  echo Change MAC of device: $netdev
+# Check whether the script is carried out with root rights
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+# Loop via network devices
+while IFS= read -r netdev; do
+  echo "Changing MAC of device: $netdev"
   echo
-  sudo ip link set dev $netdev down
+  
+  # Shut down device
+  if ! su -x ip link set dev "$netdev" down; then
+    echo "Failed to bring down $netdev. Skipping..."
+    continue
+  fi
   sleep 0.2
-  sudo macchanger -r $netdev
+  
+  # Change MAC-Adresse
+  if ! su -x macchanger -r "$netdev"; then
+    echo "Failed to change MAC for $netdev. Skipping..."
+    continue
+  fi
   sleep 0.2
-  sudo ip link set dev $netdev up
+  
+  # Restart device
+  if ! su -x ip link set dev "$netdev" up; then
+    echo "Failed to bring up $netdev. Skipping..."
+    continue
+  fi
   echo
-done
+done < <(grep : /proc/net/dev | awk -F ":" '{ print $1 }' | grep -v lo)
